@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: media-scraper-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 123123
+      MYSQL_DATABASE: media
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - scraper-network
+
+  # Redis for Bull Queue
+  redis:
+    image: redis:7-alpine
+    container_name: media-scraper-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - scraper-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # NestJS API
+  api:
+    build:
+      context: ./media-scraper-api
+      dockerfile: Dockerfile
+    container_name: media-scraper-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    env_file:
+      - ./media-scraper-api/.env.example
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - scraper-network
+
+  # Bull Board for Queue Monitoring (Optional)
+  bull-board:
+    image: deadly0/bull-board:latest
+    container_name: media-scraper-bull-board
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BULL_PREFIX: bull
+    depends_on:
+      - redis
+    networks:
+      - scraper-network
+
+  ui:
+    depends_on:
+      - api
+    build:
+      context: ./media-scraper-ui
+      dockerfile: Dockerfile
+    image: media_ui
+    container_name: media_ui
+    env_file:
+      - ./media-scraper-ui/.env.example
+    ports:
+      - "3000:3000"
+    networks:
+      - scraper-network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  scraper-network:
+    driver: bridge

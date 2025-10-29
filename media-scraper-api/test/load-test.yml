@@ -1,0 +1,157 @@
+config:
+  target: 'http://localhost:3000'
+
+  # Environment-specific configuration
+  # For 1 CPU / 1GB RAM server
+  phases:
+    # Phase 1: Initial warm-up
+    # Purpose: Wake up the system, establish connections, initialize Puppeteer
+    - duration: 60
+      arrivalRate: 1
+      name: 'Phase 1: System Warm-up'
+
+    # Phase 2: Gradual ramp-up
+    # Purpose: Start queuing jobs, test queue behavior
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: 'Phase 2: Gradual Ramp-up (10-50 req/sec)'
+
+    # Phase 3: Approach target load
+    # Purpose: Push system to near-capacity
+    - duration: 180
+      arrivalRate: 50
+      rampTo: 100
+      name: 'Phase 3: Approach Target (50-100 req/sec)'
+
+    # Phase 4: Sustained high load - CRITICAL TEST
+    # Purpose: Maintain ~5000 concurrent jobs in the queue
+    # Math: At ~40 req/sec for 180 seconds = ~7200 jobs submitted
+    # With 2 concurrent processors at ~30s per job = ~12 jobs/min = 0.2 jobs/sec processed
+    # This creates a backlog simulating 5000+ concurrent jobs
+    - duration: 300
+      arrivalRate: 40
+      name: 'Phase 4: Sustained High Load (40 req/sec for 5min)'
+
+    # Phase 5: Peak burst test
+    # Purpose: Test system under extreme burst
+    - duration: 60
+      arrivalRate: 80
+      name: 'Phase 5: Peak Burst (80 req/sec)'
+
+    # Phase 6: Cool down and recovery
+    # Purpose: Let system process queued jobs
+    - duration: 120
+      arrivalRate: 5
+      name: 'Phase 6: Cool Down (5 req/sec)'
+
+    # Phase 7: Final stability check
+    - duration: 60
+      arrivalRate: 1
+      name: 'Phase 7: Final Stability Check'
+
+  # Load test data
+  payload:
+    path: './load-test-urls.csv'
+    fields:
+      - 'url'
+    order: 'random' # Random URL selection for realistic test
+    skipHeader: true
+
+  processor: './load-test-processor.js'
+
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+      User-Agent: 'Artillery-LoadTest/2.0 (Performance Testing)'
+
+  # Plugins for enhanced metrics
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+
+  # Custom metrics configuration
+  ensure:
+    maxErrorRate: 5 # Max 5% error rate
+    p95: 5000 # 95th percentile response time < 5s
+    p99: 10000 # 99th percentile response time < 10s
+
+scenarios:
+  # Scenario 1: Submit single URL for scraping (70% of traffic)
+  - name: 'Submit Single URL Scraping Job'
+    weight: 70
+    flow:
+      - function: 'setCustomData'
+
+      # Submit scraping job
+      - post:
+          url: '/api/v1/scraper/scrape'
+          json:
+            urls: ['{{ url }}']
+          capture:
+            - json: '$[0].id'
+              as: 'jobId'
+            - json: '$[0].status'
+              as: 'jobStatus'
+          expect:
+            - statusCode: 202
+            - contentType: json
+            - hasProperty: '[0].id'
+            - hasProperty: '[0].status'
+
+      - function: 'afterResponse'
+
+      # Random think time (simulate real user)
+      - think: '{{ thinkTime }}'
+
+  # Scenario 2: Submit batch of URLs (20% of traffic)
+  - name: 'Submit Batch URL Scraping Jobs'
+    weight: 20
+    flow:
+      - function: 'setCustomData'
+
+      - post:
+          url: '/api/v1/scraper/scrape'
+          json:
+            urls:
+              - '{{ url }}'
+              - 'https://example.com'
+              - 'https://www.github.com'
+          capture:
+            - json: '$[0].id'
+              as: 'jobId'
+          expect:
+            - statusCode: 202
+            - contentType: json
+
+      - function: 'afterResponse'
+
+  # Scenario 3: Query queue statistics (5% of traffic)
+  - name: 'Query Queue Statistics'
+    weight: 5
+    flow:
+      - get:
+          url: '/api/v1/scraper/media?page=1&limit=10'
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: 'data'
+            - hasProperty: 'meta'
+
+  # Scenario 4: List media with filters (5% of traffic)
+  - name: 'List Media with Filters'
+    weight: 5
+    flow:
+      - get:
+          url: '/api/v1/scraper/media?page=1&limit=20&type=image'
+          expect:
+            - statusCode: 200
+            - contentType: json
+# Performance targets for 1 CPU / 1GB RAM:
+# - Queue 5000+ jobs successfully
+# - Maintain system stability (no OOM, no crashes)
+# - Process rate: ~2 jobs per 30 seconds = ~4 jobs/min
+# - API response time: < 500ms for job submission
+# - Memory usage: < 950MB peak
+# - CPU usage: < 100% sustained

@@ -44,14 +44,13 @@ cd media-scraper-ui && yarn && cp .env.example .env && yarn start
 **NOTE**: The local DB will use port **3306**. If the port is being used, please change it to a different port in `docker-compose.yml` and `media-scraper-api/.env.example`
 
 **SAMPLE DATA FOR SHARING (FRONT-END)** :
-`If you want to share multiple urls please add ';' between those url to separate them`.
 
 ```
-https://www.youtube.com/watch?v=TLysAkFM4cA;
-https://www.youtube.com/watch?v=5Q2Pc-e-8Qc;
-https://www.youtube.com/watch?v=P8kFrqRMXQM;
-https://www.youtube.com/watch?v=hhFl-ZMQHtA;
-https://www.youtube.com/watch?v=DtLODDVegns;
+https://www.youtube.com/watch?v=TLysAkFM4cA
+https://www.youtube.com/watch?v=5Q2Pc-e-8Qc
+https://www.youtube.com/watch?v=P8kFrqRMXQM
+https://www.youtube.com/watch?v=hhFl-ZMQHtA
+https://www.youtube.com/watch?v=DtLODDVegns
 ```
 
 <image src="./imgs/swagger-img.png" />

@@ -57,12 +57,9 @@ https://www.youtube.com/watch?v=DtLODDVegns;
 <image src="./imgs/swagger-img.png" />
 <image src="./imgs/app.png" />
 
-### Demo
+### Demo 
 
-<video width="1920" height="500" controls>
-  <source src="./imgs/record.mov" type="video/mp4">
-Your browser does not support the video tag.
-</video>
+https://drive.google.com/file/d/1eTdkw-4FJWOPHl0VFwb5xBdfZw0i9lLV/view?usp=sharing
 
 ### Useful commands
 

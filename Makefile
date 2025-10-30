@@ -18,6 +18,17 @@ bootstrap:
 
 	@echo "Application is up and running. Now you can access application through http://localhost:3000", docs: http://localhost:4000/api/v1/docs
 
+start:
+	@echo "==============================Building and starting all services with Docker=============================="
+	docker-compose up -d
+
+	@echo "==============================Waiting for services to be ready...=============================="
+	sleep 10
+
+	@echo "==============================Application is up and running=============================="
+	@echo "API: http://localhost:4000/api/v1/docs"
+	@echo "UI: http://localhost:3000"
+
 cleanup:
 	@echo "==============================Shutting down application==============================" 
 	docker-compose down -v

@@ -47,10 +47,12 @@ services:
     env_file:
       - ./media-scraper-api/.env.example
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - mysql
+      - redis
+    environment:
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+      DB_HOST: media-scraper-mysql
     networks:
       - scraper-network
 

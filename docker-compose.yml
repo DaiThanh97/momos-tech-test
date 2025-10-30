@@ -50,8 +50,6 @@ services:
       - mysql
       - redis
     environment:
-      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
       DB_HOST: media-scraper-mysql
       REDIS_HOST: media-scraper-redis
     networks:

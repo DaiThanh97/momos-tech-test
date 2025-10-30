@@ -47,10 +47,11 @@ services:
     env_file:
       - ./media-scraper-api/.env.example
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - mysql
+      - redis
+    environment:
+      DB_HOST: media-scraper-mysql
+      REDIS_HOST: media-scraper-redis
     networks:
       - scraper-network
 
